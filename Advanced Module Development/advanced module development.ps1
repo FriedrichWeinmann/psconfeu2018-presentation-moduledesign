@@ -1,15 +1,19 @@
 # Failsafe
 break
 
-# 1) Go Chrissy!
-# 2) Go Chrissy!
 
+# <Will be removed in final slide, need to update my profile (including prompt)>
 # Importing dbatools so it all will work
 #Import-Module dbatools
 #. .\importinternals.ps1
 
+
+
+
+
+
  #----------------------------------------------------------------------------# 
- #                3) Drowning users in a sea of blood ... not                 # 
+ #                  Drowning users in a sea of blood ... not                  # 
  #----------------------------------------------------------------------------# 
 
 # This is going to be bloody
@@ -39,6 +43,7 @@ Stop-Function -Message "Some error happened"
 
 #####
 # Demo function
+#TODO: Replace with real functionality
 function Get-Test {
     [CmdletBinding()]
     Param (
@@ -60,7 +65,8 @@ function Get-Test {
 
         foreach ($number in $Numbers) {
             if (($number -eq 2) -and ($Bar)) {
-                Stop-Function -Message "Failing on $number as ordered to" -Continue
+                try { Get-DbaBackupHistory -SqlInstance . -SqlCredential $cred -EnableException }
+                catch { Stop-Function -Message "Failing" -ErrorRecord $_ -Continue }
             }
             $number
         }
@@ -82,11 +88,12 @@ catch { "Something broke" }
 
 
  #----------------------------------------------------------------------------# 
- #                              4) Configuration                              # 
+ #                               Configuration                                # 
  #----------------------------------------------------------------------------# 
 
 <#
-Basic Issue:Growing option Complexity as command meta-level rises
+#TODO: Remove before presentation
+Basic Issue: Growing option Complexity as command meta-level rises
 functionA calls functionB calls functionC calls functionD
 - Pass through all parameters?
 --> Either provide incredibly complex parameters or choose for the user.
@@ -107,6 +114,7 @@ Solution:
 #>
 
 Get-DbaConfig
+Get-DbaConfig | Out-GridView
 
 <#
 To note:
@@ -116,19 +124,23 @@ To note:
 #>
 
 $paramSetDbaConfig = @{
-	FullName    = 'example.setting'
-	Value	    = "foo"
-	Initialize  = $true
-	Validation  = 'string'
-	Handler	    = { Write-Host ("Received: {0}" -f $args[0]) }
-	Description = "An example setting"
+	FullName    = 'sql.connection.encrypt'
+	Value	    = $true
+	Initialize  = $true # Only during module definition
+	Validation  = 'bool'
+	Handler	    = { Write-Host ("Setting SQL connection encryption to: {0}" -f $args[0]) }
+	Description = "Whether SQL connections should be encrypted. Don't disable unless you REALLY must."
 }
 
 Set-DbaConfig @paramSetDbaConfig
-Get-DbaConfig 'example.setting'
-Set-DbaConfig 'example.setting' "Bar"
+Get-DbaConfig 'sql.connection.encrypt'
+Set-DbaConfig 'sql.connection.encrypt' "foo"
+Set-DbaConfig 'sql.connection.encrypt' $false
 
-Get-DbaConfigValue 'example.setting'
+#TODO: Implement in Connect-SqlInstance (Internal connection function)
+Get-DbaConfigValue -FullName 'sql.connection.encrypt'
+
+Set-DbaConfig 'sql.connection.encrypt' $true
 
 <#
 Notes on implementation:
@@ -145,11 +157,13 @@ Additional features:
 
 
  #----------------------------------------------------------------------------# 
- #                                 5) Logging                                 # 
+ #                                   Logging                                  # 
  #----------------------------------------------------------------------------# 
 
 # Dbatools logs quite a bit
 Get-DbaConfigValue -FullName 'path.dbatoolslogpath' | Invoke-Item
+
+New-DbatoolsSupportPackage
 
 <#
 Challenges:
@@ -163,11 +177,20 @@ Challenges:
 #---------------------------------
 
 # Bad
-Write-Verbose -Message "Something"
+Write-Verbose -Message "Something" -Verbose
 
 # Good
-Write-Message -Level Verbose "Something"
+Write-Message -Level Verbose -Message "Something" -Verbose
+Write-Message -Level SomewhatVerbose -Message "Something" -Verbose
 
+<#
+Levels:
+Critical, Important, Output, Significant, VeryVerbose, Verbose, SomewhatVerbose, System, Debug, InternalComment, Warning
+#>
+Write-Message -Level VeryVerbose -Message "Something"
+Set-DbaConfig 'message.maximuminfo' 4
+Write-Message -Level VeryVerbose -Message "Something"
+#TODO: Fix this thing, then kill TODO
 
 # Performance
 #------------
@@ -178,6 +201,7 @@ Get-Runspace | ft -AutoSize
 Get-DbaRunspace
 
 # Script doing the actual logging
+#TODO: Fix path
 code "D:\Code\Github\dbatools\internal\scripts\logfilescript.ps1"
 
 
@@ -185,6 +209,8 @@ code "D:\Code\Github\dbatools\internal\scripts\logfilescript.ps1"
 #-----
 
 Get-DbaConfig logging.*
+
+
 # Integrated rotate
 
 
@@ -201,12 +227,12 @@ Get-DbaConfig logging.*
 #-----------------
 
 # Forensics!
-Get-DbatoolsLog
-Write-Message -Level Verbose -Message "Something"
+Get-DbatoolsLog | Out-GridView
+Write-Message -Level Verbose -Message "Something new"
 
 
  #----------------------------------------------------------------------------# 
- #                       6) DbaInstance Parameter class                       # 
+ #                         DbaInstance Parameter class                        # 
  #----------------------------------------------------------------------------# 
 
 <#
@@ -230,11 +256,12 @@ Challenge:
 Answer: Parameter Classes
 #>
 [DbaInstance]"foo"
+[DbaInstance]"."
 [DbaInstance]"foo\bar"
 [DbaInstance]"Server=foo\bar;"
 [DbaInstance]"(localdb)\foo"
 [DbaInstance]([System.Net.DNS]::GetHostEntry("localhost"))
-[DbaInstance](Get-ADComputer "Odin")
+[DbaInstance](Get-ADComputer "Odin") #TODO: Set up setup to include connection to AD VM
 [DbaInstance](Connect-DbaInstance -SqlInstance localhost)
 [DbaInstance]"foo bar"
 [DbaInstance]"foo\select"
@@ -253,10 +280,10 @@ Additional benefit:
 
 
  #----------------------------------------------------------------------------# 
- #                        7) Import Sequence & Tuning                         # 
+ #                          Import Sequence & Tuning                          # 
  #----------------------------------------------------------------------------# 
 
-# Guide through structure
+#TODO: Kill (Guide through structure) <-- Probably no time
 
 <#
 - Parallel import of
@@ -270,8 +297,6 @@ Additional benefit:
 - Measuring each step
 #>
 
-[SqlCollaborative.Dbatools.dbaSystem.DebugHost]::ImportTime
-
 <#
 Import Options
 - Dot Sourcing (Import Speed)
@@ -279,3 +304,5 @@ Import Options
 - Always Compile (Compile library on import; For devs)
 - Serial Import (Slower import, less resource spike)
 #>
+
+[SqlCollaborative.Dbatools.dbaSystem.DebugHost]::ImportTime | Out-GridView

@@ -10,3 +10,4 @@ Import-Module dbatools
 $pathInternal = Resolve-Path .\importinternals.ps1
 $content = $content -replace "þinsertinternalþ",$pathInternal
 Set-Content -Path $profile -Value $content -Encoding UTF8
+$cred = (Get-Credential foo)
