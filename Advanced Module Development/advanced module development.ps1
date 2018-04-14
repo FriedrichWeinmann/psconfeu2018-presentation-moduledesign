@@ -17,6 +17,9 @@ break
  #----------------------------------------------------------------------------# 
 
 # This is going to be bloody
+Get-ChildItem C:\doesntexist
+
+# So is this
 throw "Some error happened"
 
 # This is ... not going to be bloody. But bloody useles for scripting!
