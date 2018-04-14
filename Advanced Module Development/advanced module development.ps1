@@ -22,7 +22,7 @@ Get-ChildItem C:\doesntexist
 # So is this
 throw "Some error happened"
 
-# This is ... not going to be bloody. But bloody useles for scripting!
+# This is ... not going to be bloody. But bloody useless for scripting!
 try { Write-Warning "Some error happened" }
 catch { "Error reaction incoming ... not!"}
 
