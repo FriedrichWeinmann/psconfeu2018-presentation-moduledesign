@@ -2,10 +2,8 @@
 break
 
 
-# <Will be removed in final slide, need to update my profile (including prompt)>
-# Importing dbatools so it all will work
-#Import-Module dbatools
-#. .\importinternals.ps1
+
+
 
 
 
@@ -46,19 +44,19 @@ Stop-Function -Message "Some error happened"
 
 #####
 # Demo function
-#TODO: Replace with real functionality
+#TODO: Ensure bad credentials
 function Get-Test {
     [CmdletBinding()]
     Param (
         [Parameter(ValueFromPipeline = $true)]
         [int[]]
         $Numbers,
-        [switch]$Foo,
-        [switch]$Bar,
+        [switch]$KillBegin,
+        [switch]$KillProcess,
         [switch]$EnableException
     )
     begin {
-        if ($Foo) {
+        if ($KillBegin) {
             Stop-Function -Message "Failing as ordered to"
             return
         }
@@ -67,7 +65,7 @@ function Get-Test {
         if (Test-FunctionInterrupt) { return }
 
         foreach ($number in $Numbers) {
-            if (($number -eq 2) -and ($Bar)) {
+            if (($number -eq 2) -and ($KillProcess)) {
                 try { Get-DbaBackupHistory -SqlInstance . -SqlCredential $cred -EnableException }
                 catch { Stop-Function -Message "Failing" -ErrorRecord $_ -Continue }
             }
@@ -78,33 +76,23 @@ function Get-Test {
 # No errors wanted
 1..3 | Get-Test
 # Kill it in begin
-1..3 | Get-Test -Foo
+1..3 | Get-Test -KillBegin
 # Need more blood
-1..3 | Get-Test -Foo -EnableException
+1..3 | Get-Test -KillBegin -EnableException
 # Don't waste it!
-try { 1..3 | Get-Test -Foo -EnableException }
+try { 1..3 | Get-Test -KillBegin -EnableException }
 catch { "Something broke" }
 
 # Killing in process
-1..3 | Get-Test -Bar
-1..3 | Get-Test -Bar -EnableException
+1..3 | Get-Test -KillProcess
+1..3 | Get-Test -KillProcess -EnableException
 
 
  #----------------------------------------------------------------------------# 
  #                               Configuration                                # 
  #----------------------------------------------------------------------------# 
 
-<#
-#TODO: Remove before presentation
-Basic Issue: Growing option Complexity as command meta-level rises
-functionA calls functionB calls functionC calls functionD
-- Pass through all parameters?
---> Either provide incredibly complex parameters or choose for the user.
---> Not every choice is right for everybody
-- How do you control behavior that doesn't have a command?
 
---> Need for options separate from commands
-#>
 
 # PSReadline has options in dedicated command
 Get-PSReadlineOption
@@ -191,9 +179,8 @@ Levels:
 Critical, Important, Output, Significant, VeryVerbose, Verbose, SomewhatVerbose, System, Debug, InternalComment, Warning
 #>
 Write-Message -Level VeryVerbose -Message "Something"
-Set-DbaConfig 'message.maximuminfo' 4
+Set-DbaConfig 'message.maximuminfo' 5
 Write-Message -Level VeryVerbose -Message "Something"
-#TODO: Fix this thing, then kill TODO
 
 # Performance
 #------------
@@ -204,7 +191,6 @@ Get-Runspace | ft -AutoSize
 Get-DbaRunspace
 
 # Script doing the actual logging
-#TODO: Fix path
 code "D:\Code\Github\dbatools\internal\scripts\logfilescript.ps1"
 
 
@@ -286,7 +272,6 @@ Additional benefit:
  #                          Import Sequence & Tuning                          # 
  #----------------------------------------------------------------------------# 
 
-#TODO: Kill (Guide through structure) <-- Probably no time
 
 <#
 - Parallel import of
